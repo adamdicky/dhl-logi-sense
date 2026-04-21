@@ -25,7 +25,11 @@ export const RawInputs: CollectionConfig = {
               } else {
                 const newCategory = await req.payload.create({
                   collection: 'categories',
-                  data: { title: aiResult.category },
+                  data: {
+                    title: aiResult.category,
+                    // Add this line to automatically format the SWC into a valid slug format
+                    slug: aiResult.category.toLowerCase().replace(/\s+/g, '-'),
+                  },
                 })
                 categoryId = newCategory.id
               }
