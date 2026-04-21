@@ -212,6 +212,7 @@ export interface RawInput {
 export interface Category {
   id: number;
   title: string;
+  slug: string;
   parent?: (number | null) | Category;
   breadcrumbs?:
     | {
@@ -1445,6 +1446,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   parent?: T;
   breadcrumbs?:
     | T
