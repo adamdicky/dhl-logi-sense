@@ -32,7 +32,7 @@ export async function processLogiSenseInput(rawText: string, summary: string) {
 
   // Using the pro model for reasoning and structure compliance
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-pro',
+    model: 'gemini-1.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: transformationSchema,
