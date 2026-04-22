@@ -17,7 +17,7 @@ export const Articles: CollectionConfig = {
     },
     {
       name: 'content',
-      type: 'richText', // This will output JSON/HTML that your frontend TipTap editor will consume/edit
+      type: 'textarea', // This will output JSON/HTML that your frontend TipTap editor will consume/edit
       required: true,
     },
     {

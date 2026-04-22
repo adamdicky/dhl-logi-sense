@@ -19,6 +19,7 @@ export const RawInputs: CollectionConfig = {
             // 1. Check if the Category (SWC) exists, if not, create it
             let categoryId
             const existingCategory = await req.payload.find({
+              req,
               collection: 'categories',
               where: { title: { equals: aiResult.category } },
             })
@@ -27,6 +28,7 @@ export const RawInputs: CollectionConfig = {
               categoryId = existingCategory.docs[0].id
             } else {
               const newCategory = await req.payload.create({
+                req,
                 collection: 'categories',
                 data: {
                   title: aiResult.category,
@@ -38,6 +40,7 @@ export const RawInputs: CollectionConfig = {
 
             // 2. Update the original RawInput with its new Category
             await req.payload.update({
+              req,
               collection: 'raw-inputs',
               id: doc.id,
               data: { category: categoryId },
@@ -47,6 +50,7 @@ export const RawInputs: CollectionConfig = {
             const targetCollection = aiResult.documentType === 'sop' ? 'sops' : 'articles'
 
             await req.payload.create({
+              req,
               collection: targetCollection,
               data: {
                 title: aiResult.title,
