@@ -28,12 +28,24 @@ export function DashboardTableClient({ documents }: { documents: DocumentData[] 
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Filter documents based on selection
+  // NEW: State to track how many items to show
+  const [visibleCount, setVisibleCount] = useState(10)
+
+  // Reset pagination and selection when filter changes
+  const handleFilterChange = (newFilter: 'all' | 'sops' | 'articles') => {
+    setFilter(newFilter)
+    setVisibleCount(10)
+    setSelectedIds(new Set())
+  }
+
+  // Filter documents based on selection, then slice based on visibleCount
   const filteredDocs = documents.filter((doc) => filter === 'all' || doc.type === filter)
+  const visibleDocs = filteredDocs.slice(0, visibleCount)
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(filteredDocs.map((doc) => doc.id)))
+      // Only select the ones currently visible to prevent accidental mass deletion
+      setSelectedIds(new Set(visibleDocs.map((doc) => doc.id)))
     } else {
       setSelectedIds(new Set())
     }
@@ -58,7 +70,7 @@ export function DashboardTableClient({ documents }: { documents: DocumentData[] 
       .map((doc) => ({ id: doc.id, type: doc.type }))
 
     await deleteDocuments(itemsToDelete)
-    setSelectedIds(new Set()) // Clear selection after deletion
+    setSelectedIds(new Set())
     setIsDeleting(false)
   }
 
@@ -75,21 +87,21 @@ export function DashboardTableClient({ documents }: { documents: DocumentData[] 
             <Button
               size="sm"
               variant={filter === 'all' ? 'default' : 'ghost'}
-              onClick={() => setFilter('all')}
+              onClick={() => handleFilterChange('all')}
             >
               All
             </Button>
             <Button
               size="sm"
               variant={filter === 'sops' ? 'default' : 'ghost'}
-              onClick={() => setFilter('sops')}
+              onClick={() => handleFilterChange('sops')}
             >
               SOPs
             </Button>
             <Button
               size="sm"
               variant={filter === 'articles' ? 'default' : 'ghost'}
-              onClick={() => setFilter('articles')}
+              onClick={() => handleFilterChange('articles')}
             >
               Articles
             </Button>
@@ -105,13 +117,13 @@ export function DashboardTableClient({ documents }: { documents: DocumentData[] 
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]">
                 <Checkbox
-                  checked={selectedIds.size === filteredDocs.length && filteredDocs.length > 0}
+                  checked={selectedIds.size === visibleDocs.length && visibleDocs.length > 0}
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
@@ -123,14 +135,14 @@ export function DashboardTableClient({ documents }: { documents: DocumentData[] 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredDocs.length === 0 ? (
+            {visibleDocs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                  No documents found. Send data via UiPath to populate.
+                  No documents found.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredDocs.map((doc, index) => (
+              visibleDocs.map((doc, index) => (
                 <TableRow key={`${doc.type}-${doc.id}`}>
                   <TableCell>
                     <Checkbox
@@ -161,6 +173,15 @@ export function DashboardTableClient({ documents }: { documents: DocumentData[] 
             )}
           </TableBody>
         </Table>
+
+        {/* NEW: Show More Button */}
+        {filteredDocs.length > visibleCount && (
+          <div className="flex justify-center mt-4">
+            <Button variant="secondary" onClick={() => setVisibleCount((prev) => prev + 10)}>
+              Show More...
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
