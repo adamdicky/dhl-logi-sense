@@ -15,13 +15,35 @@ export async function POST(req: Request) {
 
     const payload = await getPayload({ config: configPromise })
 
-    // 1. FAST INSERT: Closes the DB transaction instantly
+    // ==========================================
+    // THE IDEMPOTENCY FIX (Anti-Triplication Shield)
+    // ==========================================
+    // 1. Check if we already received this exact data in the last 5 minutes
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const duplicateCheck = await payload.find({
+      collection: 'raw-inputs',
+      where: {
+        and: [{ rawText: { equals: rawText } }, { createdAt: { greater_than: fiveMinutesAgo } }],
+      },
+    })
+
+    if (duplicateCheck.totalDocs > 0) {
+      console.log('[LogiSense API] Network retry caught and blocked.')
+      // Instantly satisfy the retrying robot without making new database entries
+      return NextResponse.json(
+        { success: true, message: 'Already processing', docId: duplicateCheck.docs[0].id },
+        { status: 200 },
+      )
+    }
+    // ==========================================
+
+    // 2. FAST INSERT: Closes the DB transaction instantly
     const newRawInput = await payload.create({
       collection: 'raw-inputs',
       data: { rawText, summary: summary || 'No summary.', sourceType },
     })
 
-    // 2. BACKGROUND AI: Vercel keeps this alive after the response is sent
+    // 3. BACKGROUND AI: Vercel keeps this alive after the response is sent
     after(async () => {
       console.log(`[LogiSense Async] Starting AI for ${newRawInput.id}`)
       try {
@@ -67,7 +89,7 @@ export async function POST(req: Request) {
       }
     })
 
-    // 3. INSTANT RESPONSE: Prevents UiPath from silently retrying
+    // 4. INSTANT RESPONSE
     return NextResponse.json({ success: true, docId: newRawInput.id }, { status: 201 })
   } catch (error) {
     console.error('LogiSense Ingestion Error:', error)
